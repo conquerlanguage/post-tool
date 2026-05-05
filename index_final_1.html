@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>游皓雲 · 發文工具</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Noto+Sans+TC:wght@300;400;500;600&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f5f0eb;
+    --bg2: #ede7df;
+    --surface: #faf7f4;
+    --surface2: #efe9e1;
+    --border: #ddd5c8;
+    --border2: #cfc4b4;
+    --red: #b83232;
+    --red-light: #c94444;
+    --red-pale: #f9eeee;
+    --red-border: #e8c4c4;
+    --text: #2a2118;
+    --text2: #4a3e32;
+    --muted: #8a7a6a;
+    --muted2: #b0a090;
+    --green: #4a8c5c;
+    --green-pale: #eef6f1;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans TC', sans-serif;
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 20px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .header-left { display: flex; align-items: baseline; gap: 14px; }
+
+  .header h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--red);
+    letter-spacing: 0.5px;
+  }
+
+  .header-sub { font-size: 12px; color: var(--muted); font-weight: 300; }
+
+  .header-badge {
+    font-size: 11px;
+    background: var(--red-pale);
+    color: var(--red);
+    border: 1px solid var(--red-border);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-weight: 500;
+  }
+
+  /* LAYOUT */
+  .main {
+    display: grid;
+    grid-template-columns: 420px 1fr;
+    min-height: calc(100vh - 65px);
+  }
+
+  /* LEFT PANEL */
+  .left-panel {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 28px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    overflow-y: auto;
+  }
+
+  .field-group { display: flex; flex-direction: column; gap: 8px; }
+
+  .field-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1.8px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* Image upload */
+  .upload-area {
+    border: 2px dashed var(--border2);
+    border-radius: 10px;
+    background: var(--bg);
+    min-height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.2s;
+  }
+
+  .upload-area:hover { border-color: var(--red); background: var(--red-pale); }
+
+  .upload-area input[type="file"] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer;
+  }
+
+  .upload-placeholder {
+    display: flex; flex-direction: column;
+    align-items: center; gap: 6px;
+    color: var(--muted2); pointer-events: none;
+  }
+
+  .upload-icon { font-size: 22px; }
+  .upload-text { font-size: 12px; }
+
+  .img-preview {
+    width: 100%; max-height: 150px;
+    object-fit: cover; display: none;
+  }
+
+  .img-clear {
+    position: absolute; top: 8px; right: 8px;
+    background: rgba(0,0,0,0.5); color: white;
+    border: none; border-radius: 50%;
+    width: 22px; height: 22px;
+    font-size: 12px; cursor: pointer;
+    display: none; align-items: center; justify-content: center;
+    z-index: 10;
+  }
+
+  /* Textarea */
+  textarea {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 13.5px;
+    line-height: 1.8;
+    padding: 14px;
+    resize: vertical;
+    min-height: 150px;
+    outline: none;
+    transition: border-color 0.2s;
+    font-weight: 300;
+  }
+
+  textarea:focus { border-color: var(--red); }
+  textarea::placeholder { color: var(--muted2); }
+
+  /* Platform toggles */
+  .platform-toggles { display: flex; flex-wrap: wrap; gap: 7px; }
+
+  .p-btn {
+    padding: 6px 13px;
+    border-radius: 6px;
+    border: 1.5px solid var(--border2);
+    background: var(--bg);
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'Noto Sans TC', sans-serif;
+  }
+
+  .p-btn.on {
+    border-color: var(--red);
+    color: var(--red);
+    background: var(--red-pale);
+  }
+
+  /* Lang buttons */
+  .lang-row { display: flex; gap: 8px; }
+
+  .lang-btn {
+    flex: 1; padding: 9px 6px;
+    border-radius: 8px;
+    border: 1.5px solid var(--border2);
+    background: var(--bg);
+    color: var(--muted);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'Noto Sans TC', sans-serif;
+    font-weight: 500;
+    text-align: center;
+  }
+
+  .lang-btn.on {
+    border-color: var(--red);
+    color: var(--red);
+    background: var(--red-pale);
+  }
+
+  /* Generate button */
+  .gen-btn {
+    width: 100%; padding: 14px;
+    background: var(--red);
+    color: white;
+    border: none; border-radius: 10px;
+    font-size: 14px; font-weight: 600;
+    cursor: pointer;
+    font-family: 'Noto Sans TC', sans-serif;
+    transition: all 0.2s;
+    letter-spacing: 0.5px;
+  }
+
+  .gen-btn:hover { background: var(--red-light); transform: translateY(-1px); box-shadow: 0 4px 16px #b8323230; }
+  .gen-btn:disabled { background: var(--border2); color: var(--muted2); cursor: not-allowed; transform: none; box-shadow: none; }
+
+  /* Divider */
+  .divider {
+    height: 1px; background: var(--border);
+    margin: 2px 0;
+  }
+
+  /* RIGHT PANEL */
+  .right-panel {
+    padding: 28px 36px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .empty-state {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    height: 100%; gap: 12px;
+    color: var(--muted2); font-size: 13px; text-align: center;
+  }
+
+  .empty-icon { font-size: 40px; opacity: 0.3; }
+  .empty-title { font-family: 'Cormorant Garamond', serif; font-size: 20px; color: var(--muted); }
+
+  /* SOP tracker */
+  .sop-bar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: none;
+  }
+
+  .sop-title {
+    font-size: 11px; font-weight: 600;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 12px;
+  }
+
+  .sop-steps { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  .sop-step {
+    display: flex; align-items: center; gap: 7px;
+    padding: 7px 13px;
+    border-radius: 7px;
+    border: 1.5px solid var(--border);
+    background: var(--bg);
+    font-size: 12px;
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'Noto Sans TC', sans-serif;
+    font-weight: 400;
+    user-select: none;
+  }
+
+  .sop-step:hover { border-color: var(--red); }
+
+  .sop-step.done {
+    background: var(--green-pale);
+    border-color: var(--green);
+    color: var(--green);
+  }
+
+  .sop-step .check {
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+
+  .sop-step.done .check {
+    background: var(--green);
+    border-color: var(--green);
+    color: white;
+  }
+
+  .sop-progress {
+    margin-top: 10px;
+    font-size: 11px; color: var(--muted);
+    display: flex; align-items: center; gap: 10px;
+  }
+
+  .progress-bar {
+    flex: 1; height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--green);
+    border-radius: 2px;
+    transition: width 0.3s;
+  }
+
+  /* Result cards */
+  .result-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    animation: fadeUp 0.3s ease;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg2);
+  }
+
+  .platform-tag {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 600; color: var(--text2);
+  }
+
+  .tag-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+  .card-actions { display: flex; align-items: center; gap: 8px; }
+
+  .open-btn {
+    padding: 5px 12px;
+    border-radius: 6px;
+    border: 1.5px solid var(--red-border);
+    background: var(--red-pale);
+    color: var(--red);
+    font-size: 11px; font-weight: 600;
+    cursor: pointer;
+    font-family: 'Noto Sans TC', sans-serif;
+    transition: all 0.15s;
+    text-decoration: none;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+
+  .open-btn:hover { background: var(--red); color: white; border-color: var(--red); }
+
+  .copy-btn {
+    padding: 5px 12px;
+    border-radius: 6px;
+    border: 1.5px solid var(--border2);
+    background: transparent;
+    color: var(--text2);
+    font-size: 11px; font-weight: 500;
+    cursor: pointer;
+    font-family: 'Noto Sans TC', sans-serif;
+    transition: all 0.15s;
+  }
+
+  .copy-btn:hover { border-color: var(--red); color: var(--red); }
+  .copy-btn.copied { border-color: var(--green); color: var(--green); background: var(--green-pale); }
+
+  .card-body {
+    padding: 16px;
+    font-size: 13px; line-height: 1.85;
+    white-space: pre-wrap;
+    color: var(--text2);
+    min-height: 60px;
+    font-weight: 300;
+  }
+
+  .card-footer {
+    padding: 9px 16px;
+    border-top: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--bg);
+  }
+
+  .char-count { font-size: 11px; color: var(--muted2); }
+
+  .img-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 10px; color: var(--red);
+    background: var(--red-pale);
+    border: 1px solid var(--red-border);
+    border-radius: 4px; padding: 2px 7px;
+  }
+
+  /* Loading */
+  .loading-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 18px 16px;
+    display: flex; align-items: center; gap: 12px;
+    font-size: 13px; color: var(--muted);
+  }
+
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid var(--border2);
+    border-top-color: var(--red);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    flex-shrink: 0;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>游皓雲 · 發文工具</h1>
+    <span class="header-sub">輸入原稿，一鍵生成各平台格式</span>
+  </div>
+  <span class="header-badge">v2.0</span>
+</div>
+
+<div class="main">
+
+  <!-- LEFT -->
+  <div class="left-panel">
+
+    <div class="field-group">
+      <div class="field-label">📷 圖片（選填）</div>
+      <div class="upload-area" id="uploadArea">
+        <input type="file" accept="image/*" id="imgInput" onchange="handleImg(event)">
+        <div class="upload-placeholder" id="uploadPH">
+          <div class="upload-icon">🖼️</div>
+          <div class="upload-text">點擊上傳圖片</div>
+        </div>
+        <img class="img-preview" id="imgPreview" alt="">
+        <button class="img-clear" id="imgClear" onclick="clearImg(event)">✕</button>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <div class="field-label">✍️ 原稿內容</div>
+      <textarea id="mainContent" placeholder="貼上你的原稿內容...&#10;&#10;AI 會根據各平台特性幫你調整格式、語氣和標籤。"></textarea>
+    </div>
+
+    <div class="field-group">
+      <div class="field-label">📱 發布平台</div>
+      <div class="platform-toggles">
+        <button class="p-btn on" data-p="meta"  onclick="toggleP(this)">📘📸 FB粉專＋IG</button>
+        <button class="p-btn on" data-p="th"    onclick="toggleP(this)">🧵 Threads</button>
+        <button class="p-btn on" data-p="li"    onclick="toggleP(this)">💼 LinkedIn</button>
+        <button class="p-btn on" data-p="fb"    onclick="toggleP(this)">👤 FB個人</button>
+        <button class="p-btn on" data-p="blog"  onclick="toggleP(this)">📝 Blog</button>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <div class="field-label">🌐 輸出語言</div>
+      <div class="lang-row">
+        <button class="lang-btn on" data-lang="zh"   onclick="setLang(this)">中文</button>
+        <button class="lang-btn"    data-lang="es"   onclick="setLang(this)">Español</button>
+        <button class="lang-btn"    data-lang="both" onclick="setLang(this)">雙語</button>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <button class="gen-btn" id="genBtn" onclick="generate()">✨ 生成各平台格式</button>
+
+  </div>
+
+  <!-- RIGHT -->
+  <div class="right-panel" id="rightPanel">
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">✦</div>
+      <div class="empty-title">準備好了嗎？</div>
+      <div>輸入原稿後按下生成<br>各平台版本會出現在這裡</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const PLATFORMS = {
+  meta: {
+    label: 'FB粉專 ＋ IG',
+    color: '#4f7acf',
+    emoji: '📘📸',
+    url: 'https://business.facebook.com/',
+    urlLabel: '開啟 Meta Business Suite',
+    instruction: '改寫成同時適合 Facebook 粉專和 Instagram 的貼文：親切自然語氣，適當使用 emoji，結尾加互動問句，加 5-8 個 hashtag（語言學習+創業+教學）',
+  },
+  th: {
+    label: 'Threads',
+    color: '#333333',
+    emoji: '🧵',
+    url: 'https://www.threads.net/',
+    urlLabel: '開啟 Threads',
+    instruction: '改寫成 Threads 貼文：像說話一樣自然，150字以內，一個清晰觀點或金句，可加 1-2 個 hashtag',
+  },
+  li: {
+    label: 'LinkedIn',
+    color: '#0077b5',
+    emoji: '💼',
+    url: 'https://www.linkedin.com/post/new/',
+    urlLabel: '開啟 LinkedIn 發文',
+    instruction: '改寫成 LinkedIn 貼文：專業語氣、個人品牌感強，段落清晰，展現語言教師兼創業者的專業，結尾加 call-to-action',
+  },
+  fb: {
+    label: 'FB 個人',
+    color: '#1877f2',
+    emoji: '👤',
+    url: 'https://www.facebook.com/',
+    urlLabel: '開啟 Facebook',
+    instruction: '改寫成 Facebook 個人動態：像朋友分享一樣親切，可以更個人化，帶點生活感，結尾加互動問句',
+  },
+  blog: {
+    label: 'Blog',
+    color: '#b83232',
+    emoji: '📝',
+    url: 'https://yuhaoyun.world/',
+    urlLabel: '開啟部落格後台',
+    instruction: '改寫成部落格文章開頭：有吸引力的標題 + 前兩段引言，讓讀者想繼續往下閱讀，適合個人品牌/語言教育類部落格',
+  },
+};
+
+const SOP_ORDER = ['meta', 'th', 'li', 'fb', 'blog'];
+const SOP_LABELS = { meta:'FB粉專＋IG', th:'Threads', li:'LinkedIn', fb:'FB個人', blog:'Blog' };
+
+const active = new Set(['meta','th','li','fb','blog']);
+let lang = 'zh';
+let imgBase64 = null;
+let imgType = null;
+const sopDone = new Set();
+
+function toggleP(btn) {
+  const p = btn.dataset.p;
+  if (active.has(p)) { active.delete(p); btn.classList.remove('on'); }
+  else               { active.add(p);    btn.classList.add('on'); }
+}
+
+function setLang(btn) {
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  lang = btn.dataset.lang;
+}
+
+function handleImg(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const r = new FileReader();
+  r.onload = ev => {
+    imgBase64 = ev.target.result.split(',')[1];
+    imgType = file.type;
+    const img = document.getElementById('imgPreview');
+    img.src = ev.target.result; img.style.display = 'block';
+    document.getElementById('uploadPH').style.display = 'none';
+    document.getElementById('imgClear').style.display = 'flex';
+  };
+  r.readAsDataURL(file);
+}
+
+function clearImg(e) {
+  e.preventDefault(); e.stopPropagation();
+  imgBase64 = null; imgType = null;
+  document.getElementById('imgPreview').style.display = 'none';
+  document.getElementById('uploadPH').style.display = 'flex';
+  document.getElementById('imgClear').style.display = 'none';
+  document.getElementById('imgInput').value = '';
+}
+
+function renderSOP(platforms) {
+  const bar = document.getElementById('sopBar');
+  if (!bar) return;
+  const steps = bar.querySelector('.sop-steps');
+  steps.innerHTML = '';
+  platforms.forEach(p => {
+    const done = sopDone.has(p);
+    const div = document.createElement('div');
+    div.className = 'sop-step' + (done ? ' done' : '');
+    div.dataset.p = p;
+    div.innerHTML = `<div class="check">${done ? '✓' : ''}</div>${SOP_LABELS[p] || p}`;
+    div.onclick = () => toggleSOP(p);
+    steps.appendChild(div);
+  });
+  updateProgress(platforms);
+}
+
+function toggleSOP(p) {
+  if (sopDone.has(p)) sopDone.delete(p); else sopDone.add(p);
+  const platforms = [...active].filter(x => PLATFORMS[x]);
+  renderSOP(platforms);
+}
+
+function updateProgress(platforms) {
+  const bar = document.getElementById('sopBar');
+  if (!bar) return;
+  const done = platforms.filter(p => sopDone.has(p)).length;
+  const total = platforms.length;
+  bar.querySelector('.progress-fill').style.width = `${(done/total)*100}%`;
+  bar.querySelector('.sop-progress span').textContent = `已完成 ${done} / ${total} 個平台`;
+}
+
+async function generate() {
+  const content = document.getElementById('mainContent').value.trim();
+  if (!content) { alert('請先輸入原稿內容'); return; }
+  if (active.size === 0) { alert('請至少選擇一個平台'); return; }
+
+  const btn = document.getElementById('genBtn');
+  btn.disabled = true; btn.textContent = '生成中...';
+  sopDone.clear();
+
+  const right = document.getElementById('rightPanel');
+  right.innerHTML = '';
+
+  // SOP bar
+  const platforms = SOP_ORDER.filter(p => active.has(p));
+  const sopBar = document.createElement('div');
+  sopBar.className = 'sop-bar'; sopBar.id = 'sopBar';
+  sopBar.innerHTML = `
+    <div class="sop-title">📋 發文進度追蹤　（點擊打勾）</div>
+    <div class="sop-steps"></div>
+    <div class="sop-progress">
+      <div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div>
+      <span>已完成 0 / ${platforms.length} 個平台</span>
+    </div>`;
+  right.appendChild(sopBar);
+  sopBar.style.display = 'block';
+  renderSOP(platforms);
+
+  const langMap = {
+    zh: '繁體中文',
+    es: '西班牙文（español）',
+    both: '繁體中文和西班牙文雙語（中文在前，西班牙文在後，中間用 --- 分隔）'
+  };
+  const imgHint = imgBase64 ? '（附有圖片，請在適當位置加入圖說建議或相關 hashtag）' : '';
+
+  // Loading cards
+  platforms.forEach(p => {
+    const pl = PLATFORMS[p];
+    const d = document.createElement('div');
+    d.className = 'loading-card'; d.id = `loading-${p}`;
+    d.innerHTML = `<div class="spinner"></div><span>正在生成 ${pl.emoji} ${pl.label}...</span>`;
+    right.appendChild(d);
+  });
+
+  // Generate each
+  for (const p of platforms) {
+    const pl = PLATFORMS[p];
+    try {
+      const userContent = [];
+      if (imgBase64) userContent.push({ type:'image', source:{ type:'base64', media_type: imgType, data: imgBase64 }});
+      userContent.push({ type:'text', text:
+        `你是個人品牌社群媒體專家，服務對象是游皓雲老師——同時教中文和西班牙文的語言老師兼創業者，專注在多語學習、教學技巧和創業思維。\n\n` +
+        `請根據以下原稿，${pl.instruction}。\n` +
+        `輸出語言：${langMap[lang]} ${imgHint}\n` +
+        `重要：文案中不要使用任何 emoji 或表情符號。\n\n` +
+        `原稿：\n${content}\n\n只輸出改寫後的貼文內容，不需要任何說明或前言。`
+      });
+
+      const res = await fetch('https://post-tool-api.conquerlanguage.workers.dev', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model:'claude-sonnet-4-5', max_tokens:1000, messages:[{ role:'user', content: userContent }] })
+      });
+
+      const data = await res.json();
+      console.log('Worker response:', JSON.stringify(data));
+      const text = (data.content||[]).map(c => c.text||'').join('') || JSON.stringify(data);
+
+      const card = document.createElement('div');
+      card.className = 'result-card';
+      card.innerHTML = `
+        <div class="card-header">
+          <div class="platform-tag">
+            <div class="tag-dot" style="background:${pl.color}"></div>
+            ${pl.emoji} ${pl.label}
+            ${imgBase64 ? '<span class="img-badge">📷 含圖片</span>' : ''}
+          </div>
+          <div class="card-actions">
+            <a class="open-btn" href="${pl.url}" target="_blank">↗ ${pl.urlLabel}</a>
+            ${p === 'meta' ? `<button class="open-btn" onclick="publishFB('${p}')" style="background:var(--red);color:white;border-color:var(--red);">🚀 發布到粉專</button>` : ''}
+            <button class="copy-btn" onclick="copyText('${p}', this)">複製文案</button>
+          </div>
+        </div>
+        <div class="card-body" id="body-${p}">${esc(text)}</div>
+        <div class="card-footer">
+          <span class="char-count">${text.length} 字</span>
+          <span style="font-size:11px;color:var(--muted2)">複製後點上方進度條打勾 ✓</span>
+        </div>`;
+      document.getElementById(`loading-${p}`).replaceWith(card);
+
+    } catch(e) {
+      const el = document.getElementById(`loading-${p}`);
+      if (el) el.innerHTML = `<span style="color:#c44">⚠️ ${pl.label} 生成失敗，請重試</span>`;
+    }
+  }
+
+  btn.disabled = false; btn.textContent = '✨ 重新生成';
+}
+
+async function publishFB(p) {
+  const el = document.getElementById(`body-${p}`);
+  if (!el) return;
+  const message = el.innerText;
+  if (!message || message.includes('生成失敗')) { alert('請先生成文案'); return; }
+  const btn = event.target;
+  btn.textContent = '發布中...'; btn.disabled = true;
+  try {
+    const res = await fetch('https://post-tool-api.conquerlanguage.workers.dev', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'fb_post', message })
+    });
+    const data = await res.json();
+    if (data.id) {
+      btn.textContent = '✓ 已發布！';
+      btn.style.background = 'var(--green)';
+      btn.style.borderColor = 'var(--green)';
+      toggleSOP(p);
+    } else {
+      btn.textContent = '發布失敗';
+      btn.disabled = false;
+      alert('發布失敗：' + JSON.stringify(data));
+    }
+  } catch(e) {
+    btn.textContent = '發布失敗';
+    btn.disabled = false;
+  }
+}
+
+function copyText(p, btn) {
+  const el = document.getElementById(`body-${p}`);
+  if (!el) return;
+  navigator.clipboard.writeText(el.innerText).then(() => {
+    btn.textContent = '已複製 ✓'; btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '複製文案'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+function esc(t) {
+  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+</body>
+</html>
