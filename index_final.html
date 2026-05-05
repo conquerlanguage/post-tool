@@ -477,9 +477,8 @@
     <div class="field-group">
       <div class="field-label">🌐 輸出語言</div>
       <div class="lang-row">
-        <button class="lang-btn on" data-lang="zh"   onclick="setLang(this)">中文</button>
-        <button class="lang-btn"    data-lang="es"   onclick="setLang(this)">Español</button>
-        <button class="lang-btn"    data-lang="both" onclick="setLang(this)">雙語</button>
+        <button class="lang-btn on" data-lang="original" onclick="setLang(this)">原文</button>
+        <button class="lang-btn"    data-lang="both"     onclick="setLang(this)">雙語</button>
       </div>
     </div>
 
@@ -508,7 +507,7 @@ const PLATFORMS = {
     emoji: '📘📸',
     url: 'https://business.facebook.com/',
     urlLabel: '開啟 Meta Business Suite',
-    instruction: '改寫成同時適合 Facebook 粉專和 Instagram 的貼文：親切自然語氣，適當使用 emoji，結尾加互動問句，加 5-8 個 hashtag（語言學習+創業+教學）',
+    instruction: '保留原文所有內容和文字，不要改寫或刪減任何句子，只幫我整理段落排版，讓閱讀更順暢。可以加適當的換行，但文字內容必須完全照原稿',
   },
   th: {
     label: 'Threads',
@@ -516,7 +515,7 @@ const PLATFORMS = {
     emoji: '🧵',
     url: 'https://www.threads.net/',
     urlLabel: '開啟 Threads',
-    instruction: '改寫成 Threads 貼文：像說話一樣自然，150字以內，一個清晰觀點或金句，可加 1-2 個 hashtag',
+    instruction: '改寫成 Threads 貼文：像說話一樣自然，150字以內，一個清晰觀點或金句',
   },
   li: {
     label: 'LinkedIn',
@@ -524,7 +523,7 @@ const PLATFORMS = {
     emoji: '💼',
     url: 'https://www.linkedin.com/post/new/',
     urlLabel: '開啟 LinkedIn 發文',
-    instruction: '改寫成 LinkedIn 貼文：專業語氣、個人品牌感強，段落清晰，展現語言教師兼創業者的專業，結尾加 call-to-action',
+    instruction: '保留原文所有內容和文字，不要改寫或刪減任何句子，只幫我整理段落排版，讓閱讀更順暢。可以加適當的換行，但文字內容必須完全照原稿',
   },
   fb: {
     label: 'FB 個人',
@@ -532,7 +531,7 @@ const PLATFORMS = {
     emoji: '👤',
     url: 'https://www.facebook.com/',
     urlLabel: '開啟 Facebook',
-    instruction: '改寫成 Facebook 個人動態：像朋友分享一樣親切，可以更個人化，帶點生活感，結尾加互動問句',
+    instruction: '保留原文所有內容和文字，不要改寫或刪減任何句子，只幫我整理段落排版，讓閱讀更順暢。可以加適當的換行，但文字內容必須完全照原稿',
   },
   blog: {
     label: 'Blog',
@@ -540,7 +539,7 @@ const PLATFORMS = {
     emoji: '📝',
     url: 'https://yuhaoyun.world/',
     urlLabel: '開啟部落格後台',
-    instruction: '改寫成部落格文章開頭：有吸引力的標題 + 前兩段引言，讓讀者想繼續往下閱讀，適合個人品牌/語言教育類部落格',
+    instruction: '保留原文所有內容和文字，不要改寫或刪減任何句子，只幫我整理段落排版，讓閱讀更順暢。可以加適當的換行，但文字內容必須完全照原稿',
   },
 };
 
@@ -548,7 +547,7 @@ const SOP_ORDER = ['meta', 'th', 'li', 'fb', 'blog'];
 const SOP_LABELS = { meta:'FB粉專＋IG', th:'Threads', li:'LinkedIn', fb:'FB個人', blog:'Blog' };
 
 const active = new Set(['meta','th','li','fb','blog']);
-let lang = 'zh';
+let lang = 'original';
 let imgBase64 = null;
 let imgType = null;
 const sopDone = new Set();
@@ -648,9 +647,8 @@ async function generate() {
   renderSOP(platforms);
 
   const langMap = {
-    zh: '繁體中文',
-    es: '西班牙文（español）',
-    both: '繁體中文和西班牙文雙語（中文在前，西班牙文在後，中間用 --- 分隔）'
+    original: '保留原文語言（不翻譯，原文是什麼語言就輸出什麼語言）',
+    both: '雙語（先輸出原文，再輸出翻譯版本，中間用 --- 分隔；如果原文是中文則翻成西班牙文，如果原文是西班牙文則翻成中文，如果是中西夾雜則補完整雙語版本）'
   };
   const imgHint = imgBase64 ? '（附有圖片，請在適當位置加入圖說建議或相關 hashtag）' : '';
 
@@ -667,24 +665,26 @@ async function generate() {
   for (const p of platforms) {
     const pl = PLATFORMS[p];
     try {
-      const userContent = [];
-      if (imgBase64) userContent.push({ type:'image', source:{ type:'base64', media_type: imgType, data: imgBase64 }});
-      userContent.push({ type:'text', text:
-        `你是個人品牌社群媒體專家，服務對象是游皓雲老師——同時教中文和西班牙文的語言老師兼創業者，專注在多語學習、教學技巧和創業思維。\n\n` +
-        `請根據以下原稿，${pl.instruction}。\n` +
-        `輸出語言：${langMap[lang]} ${imgHint}\n\n` +
-        `原稿：\n${content}\n\n只輸出改寫後的貼文內容，不需要任何說明或前言。`
-      });
+      let text = '';
 
-      const res = await fetch('https://post-tool-api.conquerlanguage.workers.dev', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model:'claude-sonnet-4-5', max_tokens:1000, messages:[{ role:'user', content: userContent }] })
-      });
-
-      const data = await res.json();
-      console.log('Worker response:', JSON.stringify(data));
-      const text = (data.content||[]).map(c => c.text||'').join('') || JSON.stringify(data);
+      if (p === 'th') {
+        // Threads — AI 改寫成短版
+        const userContent = [];
+        if (imgBase64) userContent.push({ type:'image', source:{ type:'base64', media_type: imgType, data: imgBase64 }});
+        userContent.push({ type:'text', text:
+          `你是社群媒體專家。請把以下原稿改寫成適合 Threads 的貼文：150字以內，像說話一樣自然，抓住最核心的一個觀點。不要使用任何 emoji。輸出語言：${langMap[lang]}\n\n原稿：\n${content}\n\n直接輸出結果，不需要任何說明。`
+        });
+        const res = await fetch('https://post-tool-api.conquerlanguage.workers.dev', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model:'claude-sonnet-4-5', max_tokens:1000, messages:[{ role:'user', content: userContent }] })
+        });
+        const data = await res.json();
+        text = (data.content||[]).map(c => c.text||'').join('') || JSON.stringify(data);
+      } else {
+        // 其他平台 — 直接使用原稿
+        text = content;
+      }
 
       const card = document.createElement('div');
       card.className = 'result-card';
